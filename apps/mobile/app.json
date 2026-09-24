@@ -37,6 +37,13 @@
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
-    }
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "394adb57-3b4c-4a0b-906a-a1c0a75bb7c2"
+      }
+    },
+    "owner": "denyskoba"
   }
 }
