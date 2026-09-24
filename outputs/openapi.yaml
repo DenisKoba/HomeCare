@@ -1,0 +1,2068 @@
+openapi: 3.1.0
+info:
+  title: Home Cleaning Planner API
+  version: 0.1.0
+  description: REST API contract for the cleaning planner MVP.
+servers:
+  - url: https://api.example.com/v1
+    description: Production placeholder
+  - url: http://localhost:3000/v1
+    description: Local development
+security:
+  - bearerAuth: []
+tags:
+  - name: System
+  - name: Profile
+  - name: Devices
+  - name: Templates
+  - name: Households
+  - name: Members
+  - name: Invitations
+  - name: Rooms
+  - name: Tasks
+  - name: Plans
+
+paths:
+  /health:
+    get:
+      tags: [System]
+      operationId: getHealth
+      security: []
+      summary: Service health check
+      responses:
+        "200":
+          description: Service is healthy
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [status]
+                properties:
+                  status:
+                    type: string
+                    const: ok
+
+  /me:
+    get:
+      tags: [Profile]
+      operationId: getMe
+      summary: Get the current profile
+      description: Creates a minimal profile on first authenticated access when necessary.
+      responses:
+        "200":
+          description: Current profile
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Profile"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+    patch:
+      tags: [Profile]
+      operationId: updateMe
+      summary: Update the current profile
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateProfileRequest"
+      responses:
+        "200":
+          description: Updated profile
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Profile"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "422":
+          $ref: "#/components/responses/ValidationError"
+    delete:
+      tags: [Profile]
+      operationId: deleteMe
+      summary: Schedule account deletion
+      responses:
+        "202":
+          description: Deletion has been scheduled
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [status]
+                properties:
+                  status:
+                    type: string
+                    const: scheduled
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "409":
+          $ref: "#/components/responses/Conflict"
+
+  /me/notification-preferences:
+    get:
+      tags: [Profile]
+      operationId: getNotificationPreferences
+      summary: Get notification preferences
+      responses:
+        "200":
+          description: Notification preferences
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NotificationPreferences"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+    patch:
+      tags: [Profile]
+      operationId: updateNotificationPreferences
+      summary: Update notification preferences
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateNotificationPreferencesRequest"
+      responses:
+        "200":
+          description: Updated notification preferences
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NotificationPreferences"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "422":
+          $ref: "#/components/responses/ValidationError"
+
+  /devices:
+    post:
+      tags: [Devices]
+      operationId: upsertDevice
+      summary: Register or update an app installation
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpsertDeviceRequest"
+      responses:
+        "200":
+          description: Existing installation updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Device"
+        "201":
+          description: Installation registered
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Device"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "422":
+          $ref: "#/components/responses/ValidationError"
+
+  /devices/{deviceId}:
+    delete:
+      tags: [Devices]
+      operationId: deleteDevice
+      summary: Remove an app installation and its push token
+      parameters:
+        - $ref: "#/components/parameters/DeviceId"
+      responses:
+        "204":
+          description: Device removed
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /task-templates:
+    get:
+      tags: [Templates]
+      operationId: listTaskTemplates
+      summary: List localized task templates
+      parameters:
+        - name: roomType
+          in: query
+          required: false
+          schema:
+            $ref: "#/components/schemas/RoomType"
+        - name: locale
+          in: query
+          required: false
+          schema:
+            type: string
+            default: uk-UA
+      responses:
+        "200":
+          description: Task templates
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items]
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/TaskTemplate"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /households:
+    get:
+      tags: [Households]
+      operationId: listHouseholds
+      summary: List households for the current user
+      responses:
+        "200":
+          description: Household list
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items]
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/HouseholdSummary"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+    post:
+      tags: [Households]
+      operationId: createHousehold
+      summary: Create a household and owner membership
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateHouseholdRequest"
+      responses:
+        "201":
+          description: Household created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Household"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "422":
+          $ref: "#/components/responses/ValidationError"
+
+  /households/{householdId}:
+    parameters:
+      - $ref: "#/components/parameters/HouseholdId"
+    get:
+      tags: [Households]
+      operationId: getHousehold
+      summary: Get household details
+      responses:
+        "200":
+          description: Household details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Household"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    patch:
+      tags: [Households]
+      operationId: updateHousehold
+      summary: Update a household
+      description: Owner only.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateHouseholdRequest"
+      responses:
+        "200":
+          description: Updated household
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Household"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "422":
+          $ref: "#/components/responses/ValidationError"
+    delete:
+      tags: [Households]
+      operationId: deleteHousehold
+      summary: Soft-delete a household
+      description: Owner only.
+      parameters:
+        - $ref: "#/components/parameters/ExpectedVersion"
+      responses:
+        "204":
+          description: Household deleted
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+
+  /households/{householdId}/members:
+    get:
+      tags: [Members]
+      operationId: listHouseholdMembers
+      summary: List household members
+      parameters:
+        - $ref: "#/components/parameters/HouseholdId"
+      responses:
+        "200":
+          description: Member list
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items]
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/HouseholdMember"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /households/{householdId}/members/{memberId}:
+    parameters:
+      - $ref: "#/components/parameters/HouseholdId"
+      - $ref: "#/components/parameters/MemberId"
+    patch:
+      tags: [Members]
+      operationId: updateHouseholdMember
+      summary: Update a member role
+      description: Owner only. The last owner cannot be demoted.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [role]
+              properties:
+                role:
+                  $ref: "#/components/schemas/HouseholdRole"
+      responses:
+        "200":
+          description: Updated member
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HouseholdMember"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+    delete:
+      tags: [Members]
+      operationId: deleteHouseholdMember
+      summary: Remove a member or leave a household
+      responses:
+        "204":
+          description: Membership removed
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+
+  /households/{householdId}/invitations:
+    get:
+      tags: [Invitations]
+      operationId: listHouseholdInvitations
+      summary: List active household invitations
+      description: Owner only.
+      parameters:
+        - $ref: "#/components/parameters/HouseholdId"
+      responses:
+        "200":
+          description: Invitation list
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items]
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/InvitationSummary"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    post:
+      tags: [Invitations]
+      operationId: createHouseholdInvitation
+      summary: Create a household invitation
+      description: Owner only. The raw token is returned once.
+      parameters:
+        - $ref: "#/components/parameters/HouseholdId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateInvitationRequest"
+      responses:
+        "201":
+          description: Invitation created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CreatedInvitation"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "422":
+          $ref: "#/components/responses/ValidationError"
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
+
+  /households/{householdId}/invitations/{invitationId}:
+    delete:
+      tags: [Invitations]
+      operationId: revokeHouseholdInvitation
+      summary: Revoke an invitation
+      description: Owner only.
+      parameters:
+        - $ref: "#/components/parameters/HouseholdId"
+        - $ref: "#/components/parameters/InvitationId"
+      responses:
+        "204":
+          description: Invitation revoked
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /invitations/{token}:
+    get:
+      tags: [Invitations]
+      operationId: previewInvitation
+      security: []
+      summary: Preview an invitation from a deep link
+      parameters:
+        - $ref: "#/components/parameters/InvitationToken"
+      responses:
+        "200":
+          description: Safe invitation preview
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/InvitationPreview"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "410":
+          $ref: "#/components/responses/Gone"
+
+  /invitations/{token}/accept:
+    post:
+      tags: [Invitations]
+      operationId: acceptInvitation
+      summary: Accept an invitation
+      parameters:
+        - $ref: "#/components/parameters/InvitationToken"
+        - $ref: "#/components/parameters/IdempotencyKey"
+      responses:
+        "200":
+          description: Invitation accepted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Household"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "410":
+          $ref: "#/components/responses/Gone"
+
+  /households/{householdId}/rooms:
+    get:
+      tags: [Rooms]
+      operationId: listRooms
+      summary: List household rooms
+      parameters:
+        - $ref: "#/components/parameters/HouseholdId"
+        - name: includeArchived
+          in: query
+          required: false
+          schema:
+            type: boolean
+            default: false
+      responses:
+        "200":
+          description: Room list
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items]
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/RoomSummary"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    post:
+      tags: [Rooms]
+      operationId: createRoom
+      summary: Create a room
+      parameters:
+        - $ref: "#/components/parameters/HouseholdId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateRoomRequest"
+      responses:
+        "201":
+          description: Room created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Room"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "422":
+          $ref: "#/components/responses/ValidationError"
+
+  /rooms/{roomId}:
+    parameters:
+      - $ref: "#/components/parameters/RoomId"
+    get:
+      tags: [Rooms]
+      operationId: getRoom
+      summary: Get room details
+      responses:
+        "200":
+          description: Room details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Room"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    patch:
+      tags: [Rooms]
+      operationId: updateRoom
+      summary: Update, reorder, archive, or restore a room
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateRoomRequest"
+      responses:
+        "200":
+          description: Updated room
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Room"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "422":
+          $ref: "#/components/responses/ValidationError"
+    delete:
+      tags: [Rooms]
+      operationId: archiveRoom
+      summary: Archive a room
+      parameters:
+        - $ref: "#/components/parameters/ExpectedVersion"
+      responses:
+        "204":
+          description: Room archived
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+
+  /rooms/{roomId}/tasks:
+    get:
+      tags: [Tasks]
+      operationId: listRoomTasks
+      summary: List tasks in a room
+      parameters:
+        - $ref: "#/components/parameters/RoomId"
+        - name: includeArchived
+          in: query
+          required: false
+          schema:
+            type: boolean
+            default: false
+        - name: dueState
+          in: query
+          required: false
+          schema:
+            $ref: "#/components/schemas/DueState"
+      responses:
+        "200":
+          description: Task list
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items]
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/TaskSummary"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    post:
+      tags: [Tasks]
+      operationId: createTask
+      summary: Create a task manually or from a template
+      parameters:
+        - $ref: "#/components/parameters/RoomId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateTaskRequest"
+      responses:
+        "201":
+          description: Task created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Task"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "422":
+          $ref: "#/components/responses/ValidationError"
+
+  /tasks/{taskId}:
+    parameters:
+      - $ref: "#/components/parameters/TaskId"
+    get:
+      tags: [Tasks]
+      operationId: getTask
+      summary: Get task details
+      responses:
+        "200":
+          description: Task details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Task"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    patch:
+      tags: [Tasks]
+      operationId: updateTask
+      summary: Update or restore a task
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateTaskRequest"
+      responses:
+        "200":
+          description: Updated task
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Task"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "422":
+          $ref: "#/components/responses/ValidationError"
+    delete:
+      tags: [Tasks]
+      operationId: archiveTask
+      summary: Archive a task
+      parameters:
+        - $ref: "#/components/parameters/ExpectedVersion"
+      responses:
+        "204":
+          description: Task archived
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+
+  /tasks/{taskId}/completions:
+    get:
+      tags: [Tasks]
+      operationId: listTaskCompletions
+      summary: List task completion history
+      parameters:
+        - $ref: "#/components/parameters/TaskId"
+        - $ref: "#/components/parameters/Cursor"
+        - $ref: "#/components/parameters/Limit"
+      responses:
+        "200":
+          description: Completion history
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TaskCompletionPage"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /tasks/{taskId}/complete:
+    post:
+      tags: [Tasks]
+      operationId: completeTask
+      summary: Complete a task
+      parameters:
+        - $ref: "#/components/parameters/TaskId"
+        - $ref: "#/components/parameters/IdempotencyKey"
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CompleteTaskRequest"
+      responses:
+        "201":
+          description: Completion created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CompleteTaskResponse"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "422":
+          $ref: "#/components/responses/ValidationError"
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
+
+  /task-completions/{completionId}/undo:
+    post:
+      tags: [Tasks]
+      operationId: undoTaskCompletion
+      summary: Undo a task completion without deleting history
+      parameters:
+        - $ref: "#/components/parameters/CompletionId"
+        - $ref: "#/components/parameters/IdempotencyKey"
+      responses:
+        "200":
+          description: Completion undone
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CompleteTaskResponse"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+
+  /households/{householdId}/due-tasks:
+    get:
+      tags: [Tasks]
+      operationId: listDueTasks
+      summary: List due, upcoming, and overdue household tasks
+      parameters:
+        - $ref: "#/components/parameters/HouseholdId"
+        - name: localDate
+          in: query
+          required: true
+          schema:
+            type: string
+            format: date
+        - name: timezone
+          in: query
+          required: true
+          schema:
+            type: string
+            example: Europe/Madrid
+        - name: assignee
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [me, anyone]
+            default: me
+      responses:
+        "200":
+          description: Due task groups
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DueTasksResponse"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "422":
+          $ref: "#/components/responses/ValidationError"
+
+  /households/{householdId}/plans/generate:
+    post:
+      tags: [Plans]
+      operationId: generateDailyPlan
+      summary: Create or regenerate a daily plan
+      parameters:
+        - $ref: "#/components/parameters/HouseholdId"
+        - $ref: "#/components/parameters/IdempotencyKey"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/GeneratePlanRequest"
+      responses:
+        "200":
+          description: Existing plan regenerated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DailyPlan"
+        "201":
+          description: Plan created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DailyPlan"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "422":
+          $ref: "#/components/responses/ValidationError"
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
+
+  /households/{householdId}/daily-plans/{localDate}:
+    get:
+      tags: [Plans]
+      operationId: getDailyPlanByDate
+      summary: Get the current user's plan for a local date
+      parameters:
+        - $ref: "#/components/parameters/HouseholdId"
+        - $ref: "#/components/parameters/LocalDate"
+      responses:
+        "200":
+          description: Daily plan
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DailyPlan"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /plans/{planId}:
+    parameters:
+      - $ref: "#/components/parameters/PlanId"
+    get:
+      tags: [Plans]
+      operationId: getDailyPlan
+      summary: Get a daily plan
+      responses:
+        "200":
+          description: Daily plan
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DailyPlan"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    patch:
+      tags: [Plans]
+      operationId: updateDailyPlan
+      summary: Update status, budget, energy, or scheduled calendar block
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdatePlanRequest"
+      responses:
+        "200":
+          description: Updated daily plan
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DailyPlan"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "422":
+          $ref: "#/components/responses/ValidationError"
+
+  /plans/{planId}/items:
+    post:
+      tags: [Plans]
+      operationId: addDailyPlanItem
+      summary: Add a task to a plan manually
+      parameters:
+        - $ref: "#/components/parameters/PlanId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AddPlanItemRequest"
+      responses:
+        "200":
+          description: Updated daily plan
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DailyPlan"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "422":
+          $ref: "#/components/responses/ValidationError"
+
+  /plans/{planId}/items/{itemId}:
+    parameters:
+      - $ref: "#/components/parameters/PlanId"
+      - $ref: "#/components/parameters/PlanItemId"
+    patch:
+      tags: [Plans]
+      operationId: updateDailyPlanItem
+      summary: Skip, defer, restore, or reorder a plan item
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdatePlanItemRequest"
+      responses:
+        "200":
+          description: Updated daily plan
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DailyPlan"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "422":
+          $ref: "#/components/responses/ValidationError"
+    delete:
+      tags: [Plans]
+      operationId: deleteDailyPlanItem
+      summary: Remove an item from a plan
+      parameters:
+        - $ref: "#/components/parameters/ExpectedVersion"
+      responses:
+        "200":
+          description: Updated daily plan
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DailyPlan"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: Supabase access token.
+
+  parameters:
+    HouseholdId:
+      name: householdId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    MemberId:
+      name: memberId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    InvitationId:
+      name: invitationId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    InvitationToken:
+      name: token
+      in: path
+      required: true
+      schema:
+        type: string
+        minLength: 32
+    RoomId:
+      name: roomId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    TaskId:
+      name: taskId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    CompletionId:
+      name: completionId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    PlanId:
+      name: planId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    PlanItemId:
+      name: itemId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    LocalDate:
+      name: localDate
+      in: path
+      required: true
+      schema:
+        type: string
+        format: date
+    DeviceId:
+      name: deviceId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    IdempotencyKey:
+      name: Idempotency-Key
+      in: header
+      required: true
+      schema:
+        type: string
+        format: uuid
+    ExpectedVersion:
+      name: expectedVersion
+      in: query
+      required: true
+      schema:
+        type: integer
+        minimum: 1
+    Cursor:
+      name: cursor
+      in: query
+      required: false
+      schema:
+        type: string
+    Limit:
+      name: limit
+      in: query
+      required: false
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 100
+        default: 30
+
+  responses:
+    Unauthorized:
+      description: Authentication is required or the token is invalid
+      content:
+        application/problem+json:
+          schema:
+            $ref: "#/components/schemas/Problem"
+    Forbidden:
+      description: The authenticated user does not have permission
+      content:
+        application/problem+json:
+          schema:
+            $ref: "#/components/schemas/Problem"
+    NotFound:
+      description: Resource not found within the authorization boundary
+      content:
+        application/problem+json:
+          schema:
+            $ref: "#/components/schemas/Problem"
+    Conflict:
+      description: Domain or resource version conflict
+      content:
+        application/problem+json:
+          schema:
+            $ref: "#/components/schemas/Problem"
+    Gone:
+      description: Resource has expired or was revoked
+      content:
+        application/problem+json:
+          schema:
+            $ref: "#/components/schemas/Problem"
+    ValidationError:
+      description: Request validation failed
+      content:
+        application/problem+json:
+          schema:
+            $ref: "#/components/schemas/Problem"
+    TooManyRequests:
+      description: Rate limit exceeded
+      headers:
+        Retry-After:
+          schema:
+            type: integer
+          description: Seconds before retrying.
+      content:
+        application/problem+json:
+          schema:
+            $ref: "#/components/schemas/Problem"
+
+  schemas:
+    Profile:
+      type: object
+      required: [id, displayName, locale, timezone, onboardingCompleted, createdAt, updatedAt]
+      properties:
+        id:
+          type: string
+          format: uuid
+        displayName:
+          type: string
+        avatarUrl:
+          type: [string, "null"]
+          format: uri
+        locale:
+          type: string
+          example: uk-UA
+        timezone:
+          type: string
+          example: Europe/Madrid
+        onboardingCompleted:
+          type: boolean
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    UpdateProfileRequest:
+      type: object
+      additionalProperties: false
+      minProperties: 1
+      properties:
+        displayName:
+          type: string
+          minLength: 1
+          maxLength: 80
+        avatarUrl:
+          type: [string, "null"]
+          format: uri
+        locale:
+          type: string
+          minLength: 2
+          maxLength: 20
+        timezone:
+          type: string
+          minLength: 1
+          maxLength: 100
+        onboardingCompleted:
+          type: boolean
+
+    NotificationPreferences:
+      type: object
+      required: [dailyPlanEnabled, assignmentEnabled, invitationEnabled]
+      properties:
+        dailyPlanEnabled:
+          type: boolean
+        assignmentEnabled:
+          type: boolean
+        invitationEnabled:
+          type: boolean
+        quietHoursStart:
+          type: [string, "null"]
+          pattern: "^([01]\\d|2[0-3]):[0-5]\\d$"
+        quietHoursEnd:
+          type: [string, "null"]
+          pattern: "^([01]\\d|2[0-3]):[0-5]\\d$"
+
+    UpdateNotificationPreferencesRequest:
+      allOf:
+        - $ref: "#/components/schemas/NotificationPreferences"
+
+    DevicePlatform:
+      type: string
+      enum: [ios, android]
+
+    Device:
+      type: object
+      required: [id, platform, locale, timezone, appVersion, notificationsEnabled, lastSeenAt]
+      properties:
+        id:
+          type: string
+          format: uuid
+        platform:
+          $ref: "#/components/schemas/DevicePlatform"
+        locale:
+          type: string
+        timezone:
+          type: string
+        appVersion:
+          type: string
+        notificationsEnabled:
+          type: boolean
+        lastSeenAt:
+          type: string
+          format: date-time
+
+    UpsertDeviceRequest:
+      type: object
+      additionalProperties: false
+      required: [installationId, platform, locale, timezone, appVersion, notificationsEnabled]
+      properties:
+        installationId:
+          type: string
+          format: uuid
+        platform:
+          $ref: "#/components/schemas/DevicePlatform"
+        expoPushToken:
+          type: [string, "null"]
+          maxLength: 512
+        locale:
+          type: string
+        timezone:
+          type: string
+        appVersion:
+          type: string
+        notificationsEnabled:
+          type: boolean
+
+    HouseholdRole:
+      type: string
+      enum: [owner, member]
+
+    HouseholdSummary:
+      type: object
+      required: [id, name, timezone, role, memberCount, roomCount, dueTaskCount, version]
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        timezone:
+          type: string
+        role:
+          $ref: "#/components/schemas/HouseholdRole"
+        memberCount:
+          type: integer
+          minimum: 1
+        roomCount:
+          type: integer
+          minimum: 0
+        dueTaskCount:
+          type: integer
+          minimum: 0
+        version:
+          type: integer
+          minimum: 1
+
+    Household:
+      allOf:
+        - $ref: "#/components/schemas/HouseholdSummary"
+        - type: object
+          required: [createdBy, createdAt, updatedAt]
+          properties:
+            createdBy:
+              type: string
+              format: uuid
+            createdAt:
+              type: string
+              format: date-time
+            updatedAt:
+              type: string
+              format: date-time
+
+    CreateHouseholdRequest:
+      type: object
+      additionalProperties: false
+      required: [name, timezone]
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 80
+        timezone:
+          type: string
+          minLength: 1
+          maxLength: 100
+
+    UpdateHouseholdRequest:
+      type: object
+      additionalProperties: false
+      required: [version]
+      properties:
+        version:
+          type: integer
+          minimum: 1
+        name:
+          type: string
+          minLength: 1
+          maxLength: 80
+        timezone:
+          type: string
+          minLength: 1
+          maxLength: 100
+
+    HouseholdMember:
+      type: object
+      required: [id, userId, displayName, role, joinedAt]
+      properties:
+        id:
+          type: string
+          format: uuid
+        userId:
+          type: string
+          format: uuid
+        displayName:
+          type: string
+        avatarUrl:
+          type: [string, "null"]
+          format: uri
+        role:
+          $ref: "#/components/schemas/HouseholdRole"
+        joinedAt:
+          type: string
+          format: date-time
+
+    CreateInvitationRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        expiresInHours:
+          type: integer
+          minimum: 1
+          maximum: 168
+          default: 72
+
+    InvitationSummary:
+      type: object
+      required: [id, householdId, role, expiresAt, createdAt]
+      properties:
+        id:
+          type: string
+          format: uuid
+        householdId:
+          type: string
+          format: uuid
+        role:
+          $ref: "#/components/schemas/HouseholdRole"
+        expiresAt:
+          type: string
+          format: date-time
+        createdAt:
+          type: string
+          format: date-time
+
+    CreatedInvitation:
+      allOf:
+        - $ref: "#/components/schemas/InvitationSummary"
+        - type: object
+          required: [token, deepLink]
+          properties:
+            token:
+              type: string
+            deepLink:
+              type: string
+              format: uri
+
+    InvitationPreview:
+      type: object
+      required: [householdName, invitedByName, role, expiresAt]
+      properties:
+        householdName:
+          type: string
+        invitedByName:
+          type: string
+        role:
+          $ref: "#/components/schemas/HouseholdRole"
+        expiresAt:
+          type: string
+          format: date-time
+
+    RoomType:
+      type: string
+      enum: [kitchen, bathroom, bedroom, living_room, hallway, office, other]
+
+    RoomSummary:
+      type: object
+      required: [id, householdId, name, type, position, dueTaskCount, taskCount, archived, version]
+      properties:
+        id:
+          type: string
+          format: uuid
+        householdId:
+          type: string
+          format: uuid
+        name:
+          type: string
+        type:
+          $ref: "#/components/schemas/RoomType"
+        position:
+          type: integer
+          minimum: 0
+        dueTaskCount:
+          type: integer
+          minimum: 0
+        taskCount:
+          type: integer
+          minimum: 0
+        archived:
+          type: boolean
+        version:
+          type: integer
+          minimum: 1
+
+    Room:
+      allOf:
+        - $ref: "#/components/schemas/RoomSummary"
+        - type: object
+          required: [createdAt, updatedAt]
+          properties:
+            createdAt:
+              type: string
+              format: date-time
+            updatedAt:
+              type: string
+              format: date-time
+
+    CreateRoomRequest:
+      type: object
+      additionalProperties: false
+      required: [name, type]
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 80
+        type:
+          $ref: "#/components/schemas/RoomType"
+        position:
+          type: integer
+          minimum: 0
+
+    UpdateRoomRequest:
+      type: object
+      additionalProperties: false
+      required: [version]
+      properties:
+        version:
+          type: integer
+          minimum: 1
+        name:
+          type: string
+          minLength: 1
+          maxLength: 80
+        type:
+          $ref: "#/components/schemas/RoomType"
+        position:
+          type: integer
+          minimum: 0
+        archived:
+          type: boolean
+
+    Effort:
+      type: string
+      enum: [low, normal, high]
+
+    Priority:
+      type: string
+      enum: [low, normal, high]
+
+    DueState:
+      type: string
+      enum: [not_due, upcoming, due, overdue]
+
+    AssignmentMode:
+      type: string
+      enum: [unassigned, fixed, rotation]
+
+    IntervalRecurrence:
+      type: object
+      additionalProperties: false
+      required: [type, every, unit]
+      properties:
+        type:
+          type: string
+          const: interval
+        every:
+          type: integer
+          minimum: 1
+          maximum: 365
+        unit:
+          type: string
+          enum: [day, week]
+
+    WeeklyRecurrence:
+      type: object
+      additionalProperties: false
+      required: [type, daysOfWeek]
+      properties:
+        type:
+          type: string
+          const: weekly
+        daysOfWeek:
+          type: array
+          minItems: 1
+          uniqueItems: true
+          items:
+            type: integer
+            minimum: 1
+            maximum: 7
+
+    MonthlyRecurrence:
+      type: object
+      additionalProperties: false
+      required: [type, dayOfMonth]
+      properties:
+        type:
+          type: string
+          const: monthly
+        dayOfMonth:
+          type: integer
+          minimum: 1
+          maximum: 31
+
+    ManualRecurrence:
+      type: object
+      additionalProperties: false
+      required: [type]
+      properties:
+        type:
+          type: string
+          const: manual
+
+    Recurrence:
+      oneOf:
+        - $ref: "#/components/schemas/IntervalRecurrence"
+        - $ref: "#/components/schemas/WeeklyRecurrence"
+        - $ref: "#/components/schemas/MonthlyRecurrence"
+        - $ref: "#/components/schemas/ManualRecurrence"
+      discriminator:
+        propertyName: type
+
+    TaskTemplate:
+      type: object
+      required: [id, roomType, locale, title, estimatedMinutes, effort, recurrence]
+      properties:
+        id:
+          type: string
+          format: uuid
+        roomType:
+          $ref: "#/components/schemas/RoomType"
+        locale:
+          type: string
+        title:
+          type: string
+        estimatedMinutes:
+          type: integer
+          minimum: 1
+        effort:
+          $ref: "#/components/schemas/Effort"
+        recurrence:
+          $ref: "#/components/schemas/Recurrence"
+
+    TaskSummary:
+      type: object
+      required:
+        - id
+        - householdId
+        - roomId
+        - title
+        - estimatedMinutes
+        - effort
+        - priority
+        - recurrence
+        - assignmentMode
+        - rotationMemberIds
+        - dueState
+        - archived
+        - version
+      properties:
+        id:
+          type: string
+          format: uuid
+        householdId:
+          type: string
+          format: uuid
+        roomId:
+          type: string
+          format: uuid
+        title:
+          type: string
+        estimatedMinutes:
+          type: integer
+        effort:
+          $ref: "#/components/schemas/Effort"
+        priority:
+          $ref: "#/components/schemas/Priority"
+        recurrence:
+          $ref: "#/components/schemas/Recurrence"
+        assignmentMode:
+          $ref: "#/components/schemas/AssignmentMode"
+        fixedAssigneeId:
+          type: [string, "null"]
+          format: uuid
+        rotationMemberIds:
+          type: array
+          items:
+            type: string
+            format: uuid
+        dueState:
+          $ref: "#/components/schemas/DueState"
+        lastCompletedAt:
+          type: [string, "null"]
+          format: date-time
+        nextDueOn:
+          type: [string, "null"]
+          format: date
+        archived:
+          type: boolean
+        version:
+          type: integer
+          minimum: 1
+
+    Task:
+      allOf:
+        - $ref: "#/components/schemas/TaskSummary"
+        - type: object
+          required: [createdBy, createdAt, updatedAt]
+          properties:
+            templateId:
+              type: [string, "null"]
+              format: uuid
+            notes:
+              type: [string, "null"]
+            rotationIndex:
+              type: integer
+              minimum: 0
+            createdBy:
+              type: string
+              format: uuid
+            createdAt:
+              type: string
+              format: date-time
+            updatedAt:
+              type: string
+              format: date-time
+
+    CreateTaskRequest:
+      type: object
+      additionalProperties: false
+      required: [title, estimatedMinutes, effort, priority, recurrence, assignmentMode]
+      properties:
+        templateId:
+          type: [string, "null"]
+          format: uuid
+        title:
+          type: string
+          minLength: 1
+          maxLength: 120
+        notes:
+          type: [string, "null"]
+          maxLength: 2000
+        estimatedMinutes:
+          type: integer
+          minimum: 1
+          maximum: 480
+        effort:
+          $ref: "#/components/schemas/Effort"
+        priority:
+          $ref: "#/components/schemas/Priority"
+        recurrence:
+          $ref: "#/components/schemas/Recurrence"
+        assignmentMode:
+          $ref: "#/components/schemas/AssignmentMode"
+        fixedAssigneeId:
+          type: [string, "null"]
+          format: uuid
+        rotationMemberIds:
+          type: array
+          uniqueItems: true
+          items:
+            type: string
+            format: uuid
+
+    UpdateTaskRequest:
+      type: object
+      additionalProperties: false
+      required: [version]
+      properties:
+        version:
+          type: integer
+          minimum: 1
+        title:
+          type: string
+          minLength: 1
+          maxLength: 120
+        notes:
+          type: [string, "null"]
+          maxLength: 2000
+        estimatedMinutes:
+          type: integer
+          minimum: 1
+          maximum: 480
+        effort:
+          $ref: "#/components/schemas/Effort"
+        priority:
+          $ref: "#/components/schemas/Priority"
+        recurrence:
+          $ref: "#/components/schemas/Recurrence"
+        assignmentMode:
+          $ref: "#/components/schemas/AssignmentMode"
+        fixedAssigneeId:
+          type: [string, "null"]
+          format: uuid
+        rotationMemberIds:
+          type: array
+          uniqueItems: true
+          items:
+            type: string
+            format: uuid
+        archived:
+          type: boolean
+
+    CompleteTaskRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        completedAt:
+          type: string
+          format: date-time
+        actualMinutes:
+          type: [integer, "null"]
+          minimum: 1
+          maximum: 1440
+        note:
+          type: [string, "null"]
+          maxLength: 1000
+
+    TaskCompletion:
+      type: object
+      required: [id, taskId, completedBy, completedAt, createdAt]
+      properties:
+        id:
+          type: string
+          format: uuid
+        taskId:
+          type: string
+          format: uuid
+        completedBy:
+          type: string
+          format: uuid
+        completedAt:
+          type: string
+          format: date-time
+        actualMinutes:
+          type: [integer, "null"]
+        note:
+          type: [string, "null"]
+        undoneAt:
+          type: [string, "null"]
+          format: date-time
+        undoneBy:
+          type: [string, "null"]
+          format: uuid
+        createdAt:
+          type: string
+          format: date-time
+
+    CompleteTaskResponse:
+      type: object
+      required: [completion, task]
+      properties:
+        completion:
+          $ref: "#/components/schemas/TaskCompletion"
+        task:
+          $ref: "#/components/schemas/TaskSummary"
+
+    TaskCompletionPage:
+      type: object
+      required: [items, nextCursor]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/TaskCompletion"
+        nextCursor:
+          type: [string, "null"]
+
+    DueTasksResponse:
+      type: object
+      required: [overdue, due, upcoming]
+      properties:
+        overdue:
+          type: array
+          items:
+            $ref: "#/components/schemas/TaskSummary"
+        due:
+          type: array
+          items:
+            $ref: "#/components/schemas/TaskSummary"
+        upcoming:
+          type: array
+          items:
+            $ref: "#/components/schemas/TaskSummary"
+
+    EnergyLevel:
+      type: string
+      enum: [low, normal, high]
+
+    PlanStatus:
+      type: string
+      enum: [draft, active, completed, cancelled]
+
+    PlanItemStatus:
+      type: string
+      enum: [planned, completed, skipped, deferred]
+
+    SelectionReason:
+      type: string
+      enum: [overdue, due, priority, manual]
+
+    DailyPlanItem:
+      type: object
+      required: [id, task, estimatedMinutes, selectionReason, position, status]
+      properties:
+        id:
+          type: string
+          format: uuid
+        task:
+          $ref: "#/components/schemas/TaskSummary"
+        assignedTo:
+          type: [string, "null"]
+          format: uuid
+        estimatedMinutes:
+          type: integer
+          minimum: 1
+        selectionReason:
+          $ref: "#/components/schemas/SelectionReason"
+        position:
+          type: integer
+          minimum: 0
+        status:
+          $ref: "#/components/schemas/PlanItemStatus"
+        completionId:
+          type: [string, "null"]
+          format: uuid
+
+    DailyPlan:
+      type: object
+      required:
+        - id
+        - householdId
+        - userId
+        - localDate
+        - timezone
+        - timeBudgetMinutes
+        - energyLevel
+        - status
+        - items
+        - totalEstimatedMinutes
+        - version
+        - createdAt
+        - updatedAt
+      properties:
+        id:
+          type: string
+          format: uuid
+        householdId:
+          type: string
+          format: uuid
+        userId:
+          type: string
+          format: uuid
+        localDate:
+          type: string
+          format: date
+        timezone:
+          type: string
+        timeBudgetMinutes:
+          type: integer
+          minimum: 5
+          maximum: 240
+        energyLevel:
+          $ref: "#/components/schemas/EnergyLevel"
+        status:
+          $ref: "#/components/schemas/PlanStatus"
+        scheduledStartAt:
+          type: [string, "null"]
+          format: date-time
+        scheduledEndAt:
+          type: [string, "null"]
+          format: date-time
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/DailyPlanItem"
+        totalEstimatedMinutes:
+          type: integer
+          minimum: 0
+        version:
+          type: integer
+          minimum: 1
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    GeneratePlanRequest:
+      type: object
+      additionalProperties: false
+      required: [localDate, timezone, timeBudgetMinutes, energyLevel]
+      properties:
+        localDate:
+          type: string
+          format: date
+        timezone:
+          type: string
+        timeBudgetMinutes:
+          type: integer
+          minimum: 5
+          maximum: 240
+        energyLevel:
+          $ref: "#/components/schemas/EnergyLevel"
+        roomIds:
+          type: array
+          uniqueItems: true
+          items:
+            type: string
+            format: uuid
+        includeAssignedToOthers:
+          type: boolean
+          default: false
+        preserveManualItems:
+          type: boolean
+          default: true
+        expectedPlanVersion:
+          type: [integer, "null"]
+          minimum: 1
+
+    UpdatePlanRequest:
+      type: object
+      additionalProperties: false
+      required: [version]
+      properties:
+        version:
+          type: integer
+          minimum: 1
+        timeBudgetMinutes:
+          type: integer
+          minimum: 5
+          maximum: 240
+        energyLevel:
+          $ref: "#/components/schemas/EnergyLevel"
+        status:
+          $ref: "#/components/schemas/PlanStatus"
+        scheduledStartAt:
+          type: [string, "null"]
+          format: date-time
+        scheduledEndAt:
+          type: [string, "null"]
+          format: date-time
+
+    AddPlanItemRequest:
+      type: object
+      additionalProperties: false
+      required: [planVersion, taskId]
+      properties:
+        planVersion:
+          type: integer
+          minimum: 1
+        taskId:
+          type: string
+          format: uuid
+        position:
+          type: integer
+          minimum: 0
+
+    UpdatePlanItemRequest:
+      type: object
+      additionalProperties: false
+      required: [planVersion]
+      properties:
+        planVersion:
+          type: integer
+          minimum: 1
+        status:
+          $ref: "#/components/schemas/PlanItemStatus"
+        position:
+          type: integer
+          minimum: 0
+
+    Problem:
+      type: object
+      required: [type, title, status, code, traceId]
+      properties:
+        type:
+          type: string
+          format: uri
+        title:
+          type: string
+        status:
+          type: integer
+          minimum: 400
+          maximum: 599
+        code:
+          type: string
+        detail:
+          type: string
+        traceId:
+          type: string
+        errors:
+          type: array
+          items:
+            type: object
+            required: [field, message]
+            properties:
+              field:
+                type: string
+              message:
+                type: string
+        currentResource:
+          type: [object, "null"]
+          additionalProperties: true

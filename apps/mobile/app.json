@@ -1,0 +1,40 @@
+{
+  "expo": {
+    "name": "HomeCare",
+    "slug": "homecare",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "scheme": "homecare",
+    "userInterfaceStyle": "automatic",
+    "newArchEnabled": true,
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "app.homecare.mobile",
+      "usesAppleSignIn": true,
+      "infoPlist": {
+        "NSCalendarsFullAccessUsageDescription": "HomeCare додає заплановані домашні справи у вибраний календар."
+      }
+    },
+    "android": {
+      "package": "app.homecare.mobile",
+      "permissions": ["READ_CALENDAR", "WRITE_CALENDAR", "POST_NOTIFICATIONS"]
+    },
+    "plugins": [
+      "expo-router",
+      "expo-apple-authentication",
+      "expo-calendar",
+      "expo-notifications",
+      "expo-secure-store",
+      [
+        "@react-native-google-signin/google-signin",
+        {
+          "iosUrlScheme": "com.googleusercontent.apps.52818416586-pjob4vusb1g3cpg6i6d0i59gm2fl8nur"
+        }
+      ]
+    ],
+    "experiments": {
+      "typedRoutes": true,
+      "reactCompiler": true
+    }
+  }
+}

@@ -1,0 +1,7 @@
+node_modules
+dist
+.expo
+coverage
+apps/api/src/generated
+pnpm-lock.yaml
+outputs
