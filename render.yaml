@@ -5,7 +5,7 @@ services:
     plan: free
     region: frankfurt
     branch: main
-    buildCommand: corepack enable && pnpm install --frozen-lockfile && pnpm --filter @homecare/api... build
+    buildCommand: npm install --global pnpm@9.15.9 && pnpm install --frozen-lockfile && pnpm --filter @homecare/api... build
     startCommand: pnpm --filter @homecare/api prisma:deploy && pnpm --filter @homecare/api start
     healthCheckPath: /v1/health
     envVars:
