@@ -47,11 +47,10 @@ export class RoomsService {
     return this.get(roomId, userId);
   }
 
-  async archive(roomId: string, userId: string) {
+  async remove(roomId: string, userId: string) {
     const room = await this.get(roomId, userId);
-    return this.prisma.room.update({
+    return this.prisma.room.delete({
       where: { id: room.id },
-      data: { archived: true, version: { increment: 1 } },
     });
   }
 }

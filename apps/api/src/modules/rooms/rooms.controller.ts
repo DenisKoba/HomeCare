@@ -1,4 +1,14 @@
-import { Body, Controller, Delete, Get, Param, Patch, Post } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  HttpCode,
+  HttpStatus,
+  Param,
+  Patch,
+  Post,
+} from '@nestjs/common';
 import {
   createRoomSchema,
   updateRoomSchema,
@@ -43,7 +53,8 @@ export class RoomsController {
   }
 
   @Delete('rooms/:roomId')
-  archive(@CurrentUser() user: AuthenticatedUser, @Param('roomId') roomId: string) {
-    return this.rooms.archive(roomId, user.id);
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async remove(@CurrentUser() user: AuthenticatedUser, @Param('roomId') roomId: string) {
+    await this.rooms.remove(roomId, user.id);
   }
 }

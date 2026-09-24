@@ -556,7 +556,7 @@ Editable resources мають integer `version`. `PATCH` передає очік
 | POST | `/v1/households/{householdId}/rooms` | Створити кімнату |
 | GET | `/v1/rooms/{roomId}` | Деталі кімнати |
 | PATCH | `/v1/rooms/{roomId}` | Редагувати/reorder/archive |
-| DELETE | `/v1/rooms/{roomId}` | Архівувати кімнату |
+| DELETE | `/v1/rooms/{roomId}` | Остаточно видалити кімнату та пов’язані задачі |
 
 ### Tasks
 
