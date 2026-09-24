@@ -66,3 +66,26 @@ pnpm format:check
 
 Swagger UI is served at `/docs` once the API is running. The product specification and complete
 OpenAPI contract are in `outputs/`.
+
+## Test deployment
+
+The repository contains a `render.yaml` Blueprint for a free Render web service. The Blueprint
+builds only the API and its workspace dependencies, applies committed Prisma migrations on start,
+and exposes `/v1/health` as the health check. During the first Blueprint deployment, provide the
+Supabase transaction-pooler `DATABASE_URL` and session-pooler `DIRECT_URL` as secret values.
+
+The mobile app contains `apps/mobile/eas.json` with an internal-distribution `preview` profile.
+Before building it, configure the `preview` EAS environment with:
+
+- `EXPO_PUBLIC_API_URL` — the deployed Render URL ending in `/v1`
+- `EXPO_PUBLIC_SUPABASE_URL`
+- `EXPO_PUBLIC_SUPABASE_ANON_KEY`
+- `EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID`
+- `EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID`
+
+Then register the iPhone and create the installable build from `apps/mobile`:
+
+```bash
+eas device:create
+eas build --platform ios --profile preview
+```

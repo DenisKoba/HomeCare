@@ -1,0 +1,21 @@
+services:
+  - type: web
+    name: homecare-api-deniskoba
+    runtime: node
+    plan: free
+    region: frankfurt
+    branch: main
+    buildCommand: corepack enable && pnpm install --frozen-lockfile && pnpm --filter @homecare/api... build
+    startCommand: pnpm --filter @homecare/api prisma:deploy && pnpm --filter @homecare/api start
+    healthCheckPath: /v1/health
+    envVars:
+      - key: NODE_VERSION
+        value: 22.13.1
+      - key: AUTH_DISABLED
+        value: 'false'
+      - key: DATABASE_URL
+        sync: false
+      - key: DIRECT_URL
+        sync: false
+      - key: SUPABASE_URL
+        value: https://yerqzihksnzhnxpushpm.supabase.co

@@ -10,9 +10,11 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "app.homecare.mobile",
+      "buildNumber": "1",
       "usesAppleSignIn": true,
       "infoPlist": {
-        "NSCalendarsFullAccessUsageDescription": "HomeCare додає заплановані домашні справи у вибраний календар."
+        "NSCalendarsFullAccessUsageDescription": "HomeCare додає заплановані домашні справи у вибраний календар.",
+        "ITSAppUsesNonExemptEncryption": false
       }
     },
     "android": {
