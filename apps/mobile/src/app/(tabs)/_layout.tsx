@@ -2,7 +2,7 @@ import { Button, FieldGroup, Host, ListItem } from '@expo/ui';
 import { useQuery } from '@tanstack/react-query';
 import { Redirect } from 'expo-router';
 import { NativeTabs } from 'expo-router/unstable-native-tabs';
-import { ActivityIndicator, View } from 'react-native';
+import { ActivityIndicator, Text, View } from 'react-native';
 import { useAuth } from '@/features/auth/auth-context';
 import { getMe, profileKeys } from '@/features/profile/api';
 
@@ -28,8 +28,12 @@ export default function TabLayout() {
 
   if (profileQuery.isPending) {
     return (
-      <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
+      <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', gap: 12 }}>
         <ActivityIndicator />
+        <Text>Завантажуємо ваш профіль…</Text>
+        <Text style={{ color: '#6b7280', textAlign: 'center', paddingHorizontal: 32 }}>
+          Після паузи серверу може знадобитися до 20 секунд, щоб прокинутися.
+        </Text>
       </View>
     );
   }

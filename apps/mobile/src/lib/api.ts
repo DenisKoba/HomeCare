@@ -1,6 +1,7 @@
 import { supabase } from './supabase';
 
 const apiUrl = process.env.EXPO_PUBLIC_API_URL ?? 'http://localhost:3000/v1';
+const apiTimeoutMs = 20_000;
 
 export class ApiRequestError extends Error {
   constructor(
@@ -21,10 +22,30 @@ export async function apiRequest<T>(path: string, init: RequestInit = {}): Promi
   if (session?.access_token && !headers.has('Authorization')) {
     headers.set('Authorization', `Bearer ${session.access_token}`);
   }
-  const response = await fetch(`${apiUrl}${path}`, {
-    ...init,
-    headers,
-  });
+  const controller = new AbortController();
+  const abortRequest = () => controller.abort();
+  const timeout = setTimeout(abortRequest, apiTimeoutMs);
+  init.signal?.addEventListener('abort', abortRequest, { once: true });
+
+  let response: Response;
+  try {
+    response = await fetch(`${apiUrl}${path}`, {
+      ...init,
+      headers,
+      signal: controller.signal,
+    });
+  } catch (error) {
+    if (controller.signal.aborted && !init.signal?.aborted) {
+      throw new ApiRequestError(
+        'HomeCare API прокидається довше, ніж очікувалося. Спробуйте ще раз.',
+        408,
+      );
+    }
+    throw error;
+  } finally {
+    clearTimeout(timeout);
+    init.signal?.removeEventListener('abort', abortRequest);
+  }
 
   if (!response.ok) {
     const problem = (await response.json().catch(() => null)) as { message?: string } | null;

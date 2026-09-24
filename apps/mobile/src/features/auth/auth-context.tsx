@@ -42,7 +42,13 @@ export function AuthProvider({ children }: PropsWithChildren) {
       setIsInitializing(false);
     };
 
-    void supabase.auth.getSession().then(({ data }) => applySession(data.session));
+    void supabase.auth
+      .getSession()
+      .then(({ data }) => applySession(data.session))
+      .catch((error: unknown) => {
+        console.warn('Failed to restore the Supabase session.', error);
+        if (mounted) setIsInitializing(false);
+      });
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event, nextSession) => applySession(nextSession));

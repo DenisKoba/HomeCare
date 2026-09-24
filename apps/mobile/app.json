@@ -2,6 +2,7 @@
   "expo": {
     "name": "HomeCare",
     "slug": "homecare",
+    "icon": "./assets/icon.png",
     "version": "0.1.0",
     "orientation": "portrait",
     "scheme": "homecare",
